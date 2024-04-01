@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 import "./ERC721SBT.sol";
 
@@ -7,18 +7,18 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
     address private _owner;
     uint256 public mintFee = 300000000000000;
     uint256 public wordFee = 300000000000000;
-    uint256[3] public wordFeeTiers = [1, 10, 30];
+    uint256[3] public wordFeeTiers = [1, 10, 100];
 
     string private _defaultTokenURI;
 
-    mapping(uint256 => string) private _usernames;
-    mapping(string => address) private _holdings;
+    mapping(address => string) private _reverseNames;
+    mapping(string => address) private _forwardNames;
 
     error OnlyOwnerExecutable();
     error InvalidUserName();
     error SBTAlreadyExists();
     error UserNameHasBeenTaken();
-    error InssufficientFunds();
+    error InssufficientFunds(uint256 needed, uint256 sent);
     error InvalidAmount();
     error InvalidTierIndex();
 
@@ -39,15 +39,36 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
         _;
     }
 
+    function owner() public view returns (address) {
+        return _owner;
+    }
+
+    function forwardResolution(
+        string memory _username
+    ) public view returns (address) {
+        return _forwardNames[_username];
+    }
+
+    function reverseResolution(
+        address addr
+    ) public view returns (string memory) {
+        return _reverseNames[addr];
+    }
+
     function isTakenName(string memory _username) public view returns (bool) {
-        return _holdings[_username] != address(0);
+        return _forwardNames[_username] != address(0);
+    }
+
+    function defaultTokenURI() public view returns (string memory) {
+        return _defaultTokenURI;
     }
 
     function _setTokenMetadata(
         uint256 tokenId,
         string memory _username
     ) internal {
-        _usernames[tokenId] = _username;
+        address holder = _msgSender();
+        _reverseNames[holder] = _username;
         _tokenURIs[tokenId] = _defaultTokenURI;
     }
 
@@ -55,7 +76,7 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
         string memory username
     ) public view returns (uint256) {
         bytes memory usernameBytes = bytes(username);
-        uint256 totalWordFee = 0;
+        uint256 totalWordFee;
 
         if (usernameBytes.length <= 2) {
             totalWordFee = wordFee * wordFeeTiers[2];
@@ -77,7 +98,8 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
         uint256 _wordFee = calculateWordFee(username);
         uint256 totalFee = mintFee + _wordFee;
 
-        if (msg.value < totalFee) revert InssufficientFunds();
+        if (msg.value < totalFee)
+            revert InssufficientFunds({needed: totalFee, sent: msg.value});
         if (to == address(0)) revert InvalidAddress();
         if (_balances[to] > 0) revert SBTAlreadyExists();
 
@@ -86,12 +108,13 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
 
     function _mint(address to, string memory username) internal {
         uint256 tokenId = _nextTokenId++;
+        address holder = _msgSender();
 
         _setTokenMetadata(tokenId, username);
 
         _balances[to] += 1;
         _owners[tokenId] = to;
-        _holdings[username] = _msgSender();
+        _forwardNames[username] = holder;
 
         emit Transfer(address(0), to, tokenId);
     }
@@ -103,9 +126,10 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
 
     function updateTokenURI(
         uint256 tokenId,
-        string memory tokenURI
+        string memory tokenURI_
     ) public onlyOwner {
-        _tokenURIs[tokenId] = tokenURI;
+        tokenURI(tokenId); // check if token exists, otherwise revert
+        _tokenURIs[tokenId] = tokenURI_;
     }
 
     function setBaseWordFee(uint256 _wordFee) public onlyOwner {
