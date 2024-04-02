@@ -1,7 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 
-// read config.json
 import fs from "fs";
 
 const rawdata = fs.readFileSync('env.json');
@@ -23,7 +22,8 @@ const config: HardhatUserConfig = {
       optimizer: {
         enabled: true,
         runs: 200
-      }
+      },
+      evmVersion: "Cancun"
     }
   },
   etherscan: {
