@@ -5,6 +5,7 @@ import "./ERC721SBT.sol";
 
 contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
     address private _owner;
+    uint256 public nameMaxLength = 32;
     uint256 public mintFee = 300000000000000;
     uint256 public wordFee = 300000000000000;
     uint256[3] public wordFeeTiers = [1, 10, 100];
@@ -15,7 +16,7 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
     mapping(string => address) private _forwardNames;
 
     error OnlyOwnerExecutable();
-    error InvalidUserName();
+    error InvalidUserName(uint256 input);
     error SBTAlreadyExists();
     error UserNameHasBeenTaken();
     error InssufficientFunds(uint256 needed, uint256 sent);
@@ -35,7 +36,7 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
     }
 
     modifier onlyOwner() {
-        if (msg.sender != _owner) revert OnlyOwnerExecutable();
+        if (_msgSender() != _owner) revert OnlyOwnerExecutable();
         _;
     }
 
@@ -92,7 +93,8 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
     function mint(address to, string memory username) public payable {
         bytes memory usernameBytes = bytes(username);
 
-        if (usernameBytes.length == 0) revert InvalidUserName();
+        if (usernameBytes.length == 0 || usernameBytes.length > nameMaxLength)
+            revert InvalidUserName(usernameBytes.length);
         if (isTakenName(username)) revert UserNameHasBeenTaken();
 
         uint256 _wordFee = calculateWordFee(username);
@@ -120,6 +122,7 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
     }
 
     function setMintFee(uint256 _mintFee) public onlyOwner {
+        if (_mintFee == mintFee) revert InvalidAmount();
         mintFee = _mintFee;
         emit UpdateMintFee(mintFee);
     }
@@ -142,6 +145,10 @@ contract JumpCrossID is ERC721SBT("JumpCrossID", "JCID") {
         if (tier > wordFeeTiers.length - 1) revert InvalidTierIndex();
         if (wordFeeTiers[tier] == multiplier) revert InvalidAmount();
         // There is no requirement that the value of a higher tier must be greater than the value of a lower tier.
+
+        // Precheck for overflow
+        uint256 totalworldFee = wordFee * multiplier;
+        totalworldFee + mintFee;
 
         wordFeeTiers[tier] = multiplier;
         emit UpdateWordMultiplier(tier, multiplier);

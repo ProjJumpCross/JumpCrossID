@@ -86,7 +86,7 @@ contract ERC721SBT is Context, ERC165, IERC721, IERC721Metadata {
         address to,
         uint256 tokenId,
         bytes calldata data
-    ) external virtual {
+    ) external pure virtual {
         revert SBTLocked();
     }
 
@@ -94,20 +94,20 @@ contract ERC721SBT is Context, ERC165, IERC721, IERC721Metadata {
         address from,
         address to,
         uint256 tokenId
-    ) external virtual {
+    ) external pure virtual {
         revert SBTLocked();
     }
 
     function getApproved(
         uint256 tokenId
     ) external view virtual returns (address operator) {
-        revert SBTLocked();
+        return address(0);
     }
 
     function isApprovedForAll(
         address owner,
         address operator
     ) external view virtual returns (bool) {
-        revert SBTLocked();
+        return false;
     }
 }

@@ -1,13 +1,29 @@
-# Sample Hardhat Project
+# JumpCrossID (SBT)
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+This contract is a SBT identity used for the JumpCross game.
 
-Try running some of the following tasks:
+```js
+const defaultTokenURI = "ipfs://QmWderTZk6hezjcPui4Ft68Kbtxw3HvvAijEWtCHPUdHE2";
+```
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.ts
+```json
+{
+  "name": "JCID PreRegistered",
+  "image": "ipfs://QmbAYbZ87xSeuwL97Ft9DoKTkjymGPGFeCGSEd26jGy8zN",
+  "description": "This NFT collection is used as a citizen ID for the JumpCross game",
+  "attributes": [
+    {
+      "trait_type": "Name",
+      "value": "Unrevealed"
+    },
+    {
+      "trait_type": "ID",
+      "value": "0x00"
+    },
+    {
+      "trait_type": "Camp",
+      "value": "Unrevealed"
+    }
+  ]
+}
 ```
